@@ -1,0 +1,155 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "cockroachdb"
+  url      = env("DATABASE_URL")
+}
+
+model Community {
+  id              BigInt            @id @default(autoincrement())
+  name            String            @unique
+  description     String?
+  slug            String            @unique
+  avatarUrl       String?           @default("/assets/empty_avatar.png")
+  Community_Quest Community_Quest[]
+
+  ownerId BigInt
+  Owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  createdAt              DateTime                 @default(now())
+  updateAt               DateTime                 @updatedAt
+  Community_Quest_Member Community_Quest_Member[]
+}
+
+enum QuestType {
+  Follow
+  Retweet
+  Like
+  Hashtag
+  Reply
+}
+
+model Quest {
+  id BigInt @id @default(autoincrement())
+
+  title       String
+  description String
+  startTime   DateTime
+  endTime     DateTime?
+  noEndTime   Boolean
+
+  // One quest has many entries
+  Entries Entry[]
+
+  // One quest has many community
+  Community_Quest Community_Quest[]
+
+  // One quest has many attendees
+  Community_Quest_Member Community_Quest_Member[]
+}
+
+model Community_Quest {
+  communityId BigInt
+  questId     BigInt
+  attendees   Community_Quest_Member[]
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  quest     Quest     @relation(fields: [questId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  User      User[]
+
+  @@id([communityId, questId])
+}
+
+model Community_Quest_Member {
+  communityId BigInt
+  questId     BigInt
+  userId      BigInt
+
+  Community_Quest            Community_Quest? @relation(fields: [community_QuestCommunityId, community_QuestQuestId], references: [communityId, questId], onDelete: Cascade, onUpdate: Cascade)
+  community_QuestCommunityId BigInt?
+  community_QuestQuestId     BigInt?
+
+  User      User?      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Quest     Quest?     @relation(fields: [questId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  Community Community? @relation(fields: [communityId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@id([communityId, questId, userId])
+}
+
+model Entry {
+  id   BigInt    @id @default(autoincrement())
+  type QuestType
+
+  Quest   Quest?  @relation(fields: [questId], references: [id], onDelete: Cascade)
+  questId BigInt?
+
+  TwitterHashtag   TwitterHashtag? @relation(fields: [twitterHashtagId], references: [id], onDelete: Cascade)
+  twitterHashtagId BigInt?
+  TwitterReply     TwitterReply?   @relation(fields: [twitterReplyId], references: [id], onDelete: Cascade)
+  twitterReplyId   BigInt?
+  TwitterFollow    TwitterFollow?  @relation(fields: [twitterFollowId], references: [id], onDelete: Cascade)
+  twitterFollowId  BigInt?
+  TwitterRetweet   TwitterRetweet? @relation(fields: [twitterRetweetId], references: [id], onDelete: Cascade)
+  twitterRetweetId BigInt?
+  TwitterLike      TwitterLike?    @relation(fields: [twitterLikeId], references: [id], onDelete: Cascade)
+  twitterLikeId    BigInt?
+  DiscordJoin      DiscordJoin?    @relation(fields: [discordJoinId], references: [id])
+  discordJoinId    BigInt?
+}
+
+model TwitterFollow {
+  id       BigInt  @id @default(autoincrement())
+  username String
+  Entry    Entry[]
+}
+
+model TwitterRetweet {
+  id    BigInt  @id @default(autoincrement())
+  url   String
+  Entry Entry[]
+}
+
+model TwitterLike {
+  id    BigInt  @id @default(autoincrement())
+  url   String
+  Entry Entry[]
+}
+
+model TwitterHashtag {
+  id   BigInt @id @default(autoincrement())
+  url  String
+  text String
+
+  Entry Entry[]
+}
+
+model TwitterReply {
+  id    BigInt  @id @default(autoincrement())
+  url   String
+  Entry Entry[]
+}
+
+model DiscordJoin {
+  id    BigInt  @id @default(autoincrement())
+  url   String
+  Entry Entry[]
+}
+
+model User {
+  id      BigInt @id @default(autoincrement())
+  address String @unique
+
+  // One user join many communities
+  Community_Quest            Community_Quest? @relation(fields: [community_QuestCommunityId, community_QuestQuestId], references: [communityId, questId], onDelete: Cascade, onUpdate: Cascade)
+  community_QuestCommunityId BigInt?
+  community_QuestQuestId     BigInt?
+
+  // One user join many quests
+  Community_Quest_Member Community_Quest_Member[]
+  Community              Community[]
+}

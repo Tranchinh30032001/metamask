@@ -1,0 +1,14 @@
+/* query */
+@media (min-width: 768px) {
+  .container {
+    background: url("../../../public/assets/background_image.png") no-repeat
+        bottom right fixed,
+      #000000;
+  }
+}
+/* others */
+@media (max-width: 767px) {
+  .container {
+    background: #000000;
+  }
+}
